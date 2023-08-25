@@ -7,20 +7,6 @@ public class LoginRequest implements UserDetails {
     private int userType;
 
     @Override
-    public String username() {
-        return this.username;
-    }
-
-    @Override
-    public String password() {
-        return this.password;
-    }
-
-    @Override
-    public int userType() {
-        return this.userType;
-    }
-
     public String getUsername() {
         return username;
     }
@@ -29,6 +15,7 @@ public class LoginRequest implements UserDetails {
         this.username = username;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
@@ -37,6 +24,7 @@ public class LoginRequest implements UserDetails {
         this.password = password;
     }
 
+    @Override
     public int getUserType() {
         return userType;
     }

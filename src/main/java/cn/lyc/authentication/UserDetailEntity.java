@@ -3,25 +3,30 @@ package cn.lyc.authentication;
 import java.util.Collection;
 
 
-public class UserCache implements UserDetails {
+public class UserDetailEntity implements UserDetails {
     private int id;
     private boolean root;
-    private String account;
+    private String realName;
     private String username;
-    private String password;
     private String email;
     private String phone;
     private int userType;
     private Collection<String> roles;
     private Collection<String> permissionUrls;
 
-    public UserCache() {
+    public UserDetailEntity() {
     }
 
-    public void copy(UserCache that) {
+    public UserDetailEntity(UserDetails details) {
+        this.id = details.getId();
+        this.username = details.getUsername();
+        this.userType = details.getUserType();
+    }
+
+    public void copy(UserDetailEntity that) {
         this.id = that.id;
         this.email = that.email;
-        this.account = that.account;
+        this.realName = that.realName;
         this.username = that.username;
         this.phone = that.phone;
         this.roles = that.roles;
@@ -30,6 +35,7 @@ public class UserCache implements UserDetails {
         this.userType = that.userType;
     }
 
+    @Override
     public int getId() {
         return id;
     }
@@ -38,16 +44,27 @@ public class UserCache implements UserDetails {
         this.id = id;
     }
 
-    public String getAccount() {
-        return account;
+    public void setRoot(boolean root) {
+        this.root = root;
     }
 
-    public void setAccount(String account) {
-        this.account = account;
+    @Override
+    public String getRealName() {
+        return realName;
     }
 
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    @Override
     public String getUsername() {
         return username;
+    }
+
+    @Override
+    public String getPassword() {
+        return null;
     }
 
     public void setUsername(String username) {
@@ -70,6 +87,7 @@ public class UserCache implements UserDetails {
         this.phone = phone;
     }
 
+    @Override
     public int getUserType() {
         return userType;
     }
@@ -78,7 +96,7 @@ public class UserCache implements UserDetails {
         this.userType = userType;
     }
 
-
+    @Override
     public Collection<String> getRoles() {
         return roles;
     }
@@ -87,44 +105,12 @@ public class UserCache implements UserDetails {
         this.roles = roles;
     }
 
+    @Override
     public Collection<String> getPermissionUrls() {
         return permissionUrls;
     }
 
     public void setPermissionUrls(Collection<String> permissionUrls) {
         this.permissionUrls = permissionUrls;
-    }
-
-    @Override
-    public String username() {
-        return this.account;
-    }
-
-    @Override
-    public String password() {
-        return this.password;
-    }
-
-    @Override
-    public int userType() {
-        return this.userType;
-    }
-
-    @Override
-    public Collection<String> roles() {
-        return this.roles;
-    }
-
-    public boolean isRoot() {
-        return root;
-    }
-
-    public void setRoot(boolean root) {
-        this.root = root;
-    }
-
-    @Override
-    public Collection<String> permissionUrls() {
-        return this.permissionUrls;
     }
 }

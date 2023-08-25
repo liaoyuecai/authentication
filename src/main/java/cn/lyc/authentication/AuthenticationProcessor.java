@@ -3,6 +3,8 @@ package cn.lyc.authentication;
 
 import cn.lyc.authentication.AuthenticationConfiguration.AuthenticationProperties;
 import io.jsonwebtoken.JwtException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -13,14 +15,17 @@ public class AuthenticationProcessor {
         login, logout, register, noAuth, auth
     }
 
+    @Autowired
+    private ApplicationContext context;
+
     private JwtService jwtService;
 
-    public AuthenticationProcessor initJwtService(String secretKey) {
+    public AuthenticationProcessor initJwtService() {
         jwtService = new JwtService();
         return this;
     }
 
-    private Map<String, UserCache> userDetailsMap = new ConcurrentHashMap<>();
+    private Map<String, UserDetails> userDetailsMap = new ConcurrentHashMap<>();
 
     private AuthenticationCacheService cacheService;
 
@@ -29,23 +34,15 @@ public class AuthenticationProcessor {
         return this;
     }
 
-
-    String rootAccount;
-
-    public AuthenticationProcessor root(String account) {
-        this.rootAccount = account;
-        return this;
-    }
-
     public AuthenticationProcessor addUser(String username, String password) {
-        userDetailsMap.put(username, new UserCache() {
+        userDetailsMap.put(username, new UserDetails() {
             @Override
-            public String username() {
+            public String getUsername() {
                 return username;
             }
 
             @Override
-            public String password() {
+            public String getPassword() {
                 return password;
             }
 
@@ -54,19 +51,19 @@ public class AuthenticationProcessor {
     }
 
     public AuthenticationProcessor addUser(String username, String password, Integer userType) {
-        userDetailsMap.put(username, new UserCache() {
+        userDetailsMap.put(username, new UserDetails() {
             @Override
-            public String username() {
+            public String getUsername() {
                 return username;
             }
 
             @Override
-            public String password() {
+            public String getPassword() {
                 return password;
             }
 
             @Override
-            public int userType() {
+            public int getUserType() {
                 return userType;
             }
         });
@@ -81,7 +78,7 @@ public class AuthenticationProcessor {
 
     public Object login(UserDetails userDetails) {
         if (userDetails.isNotNull()) {
-            UserCache user = getUserDetails(userDetails.username());
+            UserDetailEntity user = checkUserDetails(userDetails);
             if (user != null && user.equals(userDetails)) {
                 String token = buildToken(user);
                 if (cacheService != null)
@@ -93,11 +90,20 @@ public class AuthenticationProcessor {
         throw new LoginException();
     }
 
-    private UserCache getUserDetails(String username) {
-        return userDetailsMap.get(username);
+    private UserDetailEntity checkUserDetails(UserDetails userDetails) {
+        try {
+            UserDetailService userService = context.getBean(UserDetailService.class);
+            return userService.getUser(userDetails);
+        } catch (Exception e) {
+            UserDetails user = userDetailsMap.get(userDetails.getUsername());
+            if (user.equals(userDetails)) {
+                return new UserDetailEntity(user);
+            }
+            return null;
+        }
     }
 
-    protected String buildToken(UserCache user) {
+    protected String buildToken(UserDetailEntity user) {
         if (cacheService != null) return UUID.randomUUID().toString();
         return jwtService.createToken(user);
     }
@@ -111,32 +117,30 @@ public class AuthenticationProcessor {
         return null;
     }
 
-    public UserCache auth(AuthenticationToken token) {
+    public UserDetails auth(AuthenticationToken token) {
         if (StringUtils.hasText(token.getToken())) {
-            UserCache UserCache;
+            UserDetails details;
             try {
-                UserCache = getUserCache(token.getToken());
+                details = getUserDetails(token.getToken());
             } catch (JwtException e) {
-                UserCache = null;
+                details = null;
             }
-            if (UserCache != null) {
-                if (this.rootAccount != null && this.rootAccount.equals(UserCache.username())) {
-                    UserCache.setRoot(true);
-                    return UserCache;
-                }
+            if (details != null) {
+                if (AuthenticationProperties.rootAccount != null && AuthenticationProperties.rootAccount.equals(details.getUsername()))
+                    return details;
                 if (token.getAuthentication() != null && !token.getAuthentication().isRouteAuth())
-                    return UserCache;
+                    return details;
                 boolean flag = switch (AuthenticationProperties.authLevel) {
                     case none -> true;
                     case role ->
-                            token.getAuthentication() != null && authRole(UserCache.roles(), Arrays.asList(token.getAuthentication().roles()));
-                    case url -> authUrl(UserCache.permissionUrls(), token.getUrl());
+                            token.getAuthentication() != null && authRole(details.getRoles(), Arrays.asList(token.getAuthentication().roles()));
+                    case url -> authUrl(details.getPermissionUrls(), token.getUrl());
                     case roleAndUrl -> token.getAuthentication() != null &&
-                            authRole(UserCache.roles(), Arrays.asList(token.getAuthentication().roles()))
-                            && authUrl(UserCache.permissionUrls(), token.getUrl());
+                            authRole(details.getRoles(), Arrays.asList(token.getAuthentication().roles()))
+                            && authUrl(details.getPermissionUrls(), token.getUrl());
                 };
                 if (flag) {
-                    return UserCache;
+                    return details;
                 }
             }
         }
@@ -241,7 +245,7 @@ public class AuthenticationProcessor {
      * @param token
      * @return
      */
-    protected UserCache getUserCache(String token) {
+    protected UserDetails getUserDetails(String token) {
         if (cacheService == null) return jwtService.parserToken(token);
         return cacheService.getUserDetails(token);
     }

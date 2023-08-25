@@ -1,6 +1,7 @@
 package cn.lyc.authentication;
 
 
+import cn.lyc.authentication.AuthenticationConfiguration.AuthenticationProperties;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.BeanCreationException;
@@ -27,18 +28,17 @@ public class AuthenticationInit {
             return null;
         } catch (BeanCreationException e) {
             AuthenticationProcessor processor = new AuthenticationProcessor();
-            if (context.getBeanNamesForType(AuthenticationCacheService.class).length > 0) {
+            try {
                 processor.cacheService(context.getBean(AuthenticationCacheService.class));
-            } else {
-                String secretKey = AuthenticationConfiguration.AuthenticationProperties.secretKey;
-                if (!StringUtils.hasText(AuthenticationConfiguration.AuthenticationProperties.secretKey)) {
+            } catch (BeanCreationException be) {
+                if (!StringUtils.hasText(AuthenticationProperties.secretKey)) {
                     KeyGenerator keyGen = KeyGenerator.getInstance("AES");
                     keyGen.init(256, new SecureRandom());
-                    secretKey = Base64.getEncoder().encodeToString(
+                    AuthenticationProperties.secretKey = Base64.getEncoder().encodeToString(
                             keyGen.generateKey().getEncoded());
                     log.warn("jwt secretKey not set, the random secretKey will be used");
                 }
-                processor.initJwtService(secretKey);
+                processor.initJwtService();
             }
             return processor;
         }

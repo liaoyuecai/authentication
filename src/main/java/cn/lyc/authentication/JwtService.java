@@ -6,9 +6,9 @@ import io.jsonwebtoken.*;
 import java.util.*;
 
 public class JwtService {
-    private final static String USERNAME_KEY = "user";
+    private final static String REAL_NAME_KEY = "realName";
     private final static String USERNAME_TYPE_KEY = "userType";
-    private final static String ACCOUNT_KEY = "account";
+    private final static String USERNAME_KEY = "username";
     private final static String ROLES_KEY = "roles";
     private final static String URLS_KEY = "urls";
 
@@ -30,7 +30,7 @@ public class JwtService {
         this.subject = subject;
     }
 
-    public String createToken(UserCache cache) {
+    public String createToken(UserDetails details) {
         long time = System.currentTimeMillis();
         JwtBuilder builder = Jwts.builder()
                 .setId(UUID.randomUUID().toString())
@@ -41,25 +41,25 @@ public class JwtService {
         if (issuer != null) builder.setIssuer(issuer);
         if (subject != null) builder.setSubject(subject);
         Map<String, Object> claimMaps = new HashMap<>();
-        claimMaps.put(USERNAME_KEY, cache.username());
-        claimMaps.put(ACCOUNT_KEY, cache.getAccount());
-        claimMaps.put(USERNAME_TYPE_KEY, cache.userType());
-        claimMaps.put(ROLES_KEY, cache.roles());
-        claimMaps.put(URLS_KEY, cache.permissionUrls());
+        claimMaps.put(REAL_NAME_KEY, details.getRealName());
+        claimMaps.put(USERNAME_KEY, details.getUsername());
+        claimMaps.put(USERNAME_TYPE_KEY, details.getUserType());
+        if (details.getRoles() != null) claimMaps.put(ROLES_KEY, details.getRoles());
+        if (details.getPermissionUrls() != null) claimMaps.put(URLS_KEY, details.getPermissionUrls());
         return builder.addClaims(claimMaps).compact();
     }
 
-    public UserCache parserToken(String token) {
+    public UserDetails parserToken(String token) {
         Claims claims = Jwts.parser()
                 .setSigningKey(AuthenticationProperties.secretKey)
                 .parseClaimsJws(token)
                 .getBody();
-        UserCache cache = new UserCache();
-        cache.setAccount(claims.get(ACCOUNT_KEY, String.class));
-        cache.setUsername(claims.get(USERNAME_KEY, String.class));
-        cache.setRoles(claims.get(ROLES_KEY, Collection.class));
-        cache.setUserType(claims.get(USERNAME_TYPE_KEY, Integer.class));
-        cache.setPermissionUrls(claims.get(ROLES_KEY, Collection.class));
-        return cache;
+        UserDetailEntity entity = new UserDetailEntity();
+        entity.setUsername(claims.get(USERNAME_KEY, String.class));
+        entity.setRealName(claims.get(REAL_NAME_KEY, String.class));
+        entity.setRoles(claims.get(ROLES_KEY, Collection.class));
+        entity.setUserType(claims.get(USERNAME_TYPE_KEY, Integer.class));
+        entity.setPermissionUrls(claims.get(ROLES_KEY, Collection.class));
+        return entity;
     }
 }

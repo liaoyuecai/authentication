@@ -60,10 +60,10 @@ public class HttpAuthenticationAdvisor {
                     if (authentication == null)
                         authentication =
                                 invocation.getMethod().getDeclaringClass().getAnnotation(Authentication.class);
-                    UserCache cache = processor.auth(new AuthenticationToken(
+                    UserDetails details = processor.auth(new AuthenticationToken(
                             request.getHeader("accessToken"), uri, authentication));
-                    if (passUserCache != null) args[args.length - 1] = cache;
-                    return cache;
+                    if (details != null) args[args.length - 1] = details;
+                    return details;
                 }
                 case logout -> processor.logout(request.getHeader("accessToken"));
             }

@@ -3,29 +3,42 @@ package cn.lyc.authentication;
 import java.util.Collection;
 
 public interface UserDetails {
-    String username();
-
-    String password();
-
-    default int userType() {
-        return 1;
+    default int getId() {
+        return 0;
     }
 
-    default Collection<String> roles() {
+    default String getRealName() {
         return null;
     }
 
-    default Collection<String> permissionUrls() {
+    default boolean isRoot() {
+        return false;
+    }
+
+
+    String getUsername();
+
+    String getPassword();
+
+    default int getUserType() {
+        return 0;
+    }
+
+    default Collection<String> getRoles() {
+        return null;
+    }
+
+    default Collection<String> getPermissionUrls() {
         return null;
     }
 
     default boolean equals(UserDetails details) {
-        return this.username().equals(details.username()) &&
-                this.password().equals(details.password()) &&
-                this.userType() == details.userType();
+        return this.getUsername().equals(details.getUsername()) &&
+                this.getPassword().equals(details.getPassword()) &&
+                this.getUserType() == details.getUserType();
     }
 
     default boolean isNotNull() {
-        return username() != null && password() != null;
+        return getUsername() != null && getPassword() != null;
     }
 }

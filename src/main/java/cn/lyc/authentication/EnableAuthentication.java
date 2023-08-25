@@ -14,6 +14,8 @@ import java.lang.annotation.Target;
 public @interface EnableAuthentication {
     String loginUrl() default "/auth/login";
 
+    String rootAccount() default "admin";
+
     String logoutUrl() default "/auth/logout";
 
     String registerUrl() default "/user/register";

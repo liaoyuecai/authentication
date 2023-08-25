@@ -24,6 +24,7 @@ public class AuthenticationConfiguration implements ImportBeanDefinitionRegistra
                         EnableAuthentication.class.getName()));
         AuthenticationProperties.loginUrl = (String) annoAttrs.get("loginUrl");
         AuthenticationProperties.logoutUrl = (String) annoAttrs.get("logoutUrl");
+        AuthenticationProperties.rootAccount = (String) annoAttrs.get("rootAccount");
         AuthenticationProperties.registerUrl = (String) annoAttrs.get("registerUrl");
         AuthenticationProperties.secretKey = (String) annoAttrs.get("secretKey");
         AuthenticationProperties.timeout = (int) annoAttrs.get("timeout");
@@ -33,6 +34,7 @@ public class AuthenticationConfiguration implements ImportBeanDefinitionRegistra
 
 
     public static class AuthenticationProperties {
+        public static String rootAccount;
         public static String loginUrl;
         public static String logoutUrl;
         public static String registerUrl;
