@@ -43,6 +43,9 @@ public class HttpAuthenticationAdvisor {
             HttpServletRequest request = ((ServletRequestAttributes)
                     RequestContextHolder.getRequestAttributes()).getRequest();
             String uri = request.getRequestURI();
+            if ("/error".equals(uri)){
+                return joinPoint.proceed();
+            }
             AuthenticationProcessor processor = context.getBean(AuthenticationProcessor.class);
             AuthenticationProcessor.UrlType type = processor.uriType(uri);
             Object[] args = joinPoint.getArgs();
@@ -53,8 +56,8 @@ public class HttpAuthenticationAdvisor {
                     return processor.login((UserDetails) args[0]);
                 }
                 case auth -> {
-                    PassUserCache passUserCache =
-                            invocation.getMethod().getAnnotation(PassUserCache.class);
+                    LoadAuthMessage loadAuthMessage =
+                            invocation.getMethod().getAnnotation(LoadAuthMessage.class);
                     Authentication authentication =
                             invocation.getMethod().getAnnotation(Authentication.class);
                     if (authentication == null)
@@ -62,8 +65,15 @@ public class HttpAuthenticationAdvisor {
                                 invocation.getMethod().getDeclaringClass().getAnnotation(Authentication.class);
                     UserDetails details = processor.auth(new AuthenticationToken(
                             request.getHeader("accessToken"), uri, authentication));
-                    if (details != null) args[args.length - 1] = details;
-                    return details;
+                    if (loadAuthMessage != null) {
+                        if (args.length < 1)
+                            log.warn("there id no param to receive auth message");
+                        else {
+                            if (args[0] instanceof AuthHttpRequest)
+                                ((AuthHttpRequest) args[0]).loadAuthMessage(details);
+                            else log.warn("http request class need extends cn.lyc.authentication.AuthHttpRequest");
+                        }
+                    }
                 }
                 case logout -> processor.logout(request.getHeader("accessToken"));
             }

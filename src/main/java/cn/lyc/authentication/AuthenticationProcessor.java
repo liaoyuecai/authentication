@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
 
+import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,8 +21,8 @@ public class AuthenticationProcessor {
 
     private JwtService jwtService;
 
-    public AuthenticationProcessor initJwtService() {
-        jwtService = new JwtService();
+    public AuthenticationProcessor initJwtService(SecretKey secretKey) {
+        jwtService = new JwtService(secretKey);
         return this;
     }
 
@@ -78,8 +79,8 @@ public class AuthenticationProcessor {
 
     public Object login(UserDetails userDetails) {
         if (userDetails.isNotNull()) {
-            UserDetailEntity user = checkUserDetails(userDetails);
-            if (user != null && user.equals(userDetails)) {
+            UserDetails user = checkUserDetails(userDetails);
+            if (user != null) {
                 String token = buildToken(user);
                 if (cacheService != null)
                     cacheService.setUserDetails(token, user, AuthenticationProperties.timeout);
@@ -90,20 +91,20 @@ public class AuthenticationProcessor {
         throw new LoginException();
     }
 
-    private UserDetailEntity checkUserDetails(UserDetails userDetails) {
+    private UserDetails checkUserDetails(UserDetails userDetails) {
         try {
             UserDetailService userService = context.getBean(UserDetailService.class);
-            return userService.getUser(userDetails);
+            return userService.findUserDetails(userDetails);
         } catch (Exception e) {
             UserDetails user = userDetailsMap.get(userDetails.getUsername());
-            if (user.equals(userDetails)) {
-                return new UserDetailEntity(user);
+            if (user != null && user.equals(userDetails)) {
+                return new UserDetailsEntity(user);
             }
             return null;
         }
     }
 
-    protected String buildToken(UserDetailEntity user) {
+    protected String buildToken(UserDetails user) {
         if (cacheService != null) return UUID.randomUUID().toString();
         return jwtService.createToken(user);
     }
@@ -126,8 +127,13 @@ public class AuthenticationProcessor {
                 details = null;
             }
             if (details != null) {
-                if (AuthenticationProperties.rootAccount != null && AuthenticationProperties.rootAccount.equals(details.getUsername()))
+                if (AuthenticationProperties.rootAccount != null &&
+                        AuthenticationProperties.rootAccount.equals(details.getUsername())) {
+                    details.setRoot(true);
                     return details;
+                } else {
+                    details.setRoot(false);
+                }
                 if (token.getAuthentication() != null && !token.getAuthentication().isRouteAuth())
                     return details;
                 boolean flag = switch (AuthenticationProperties.authLevel) {

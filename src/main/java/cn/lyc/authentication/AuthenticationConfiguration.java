@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Role;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
+import javax.crypto.SecretKey;
+
 @Configuration(proxyBeanMethods = false)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class AuthenticationConfiguration implements ImportBeanDefinitionRegistrar {

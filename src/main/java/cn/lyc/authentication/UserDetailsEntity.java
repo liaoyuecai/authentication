@@ -3,7 +3,7 @@ package cn.lyc.authentication;
 import java.util.Collection;
 
 
-public class UserDetailEntity implements UserDetails {
+public class UserDetailsEntity implements UserDetails {
     private int id;
     private boolean root;
     private String realName;
@@ -14,16 +14,16 @@ public class UserDetailEntity implements UserDetails {
     private Collection<String> roles;
     private Collection<String> permissionUrls;
 
-    public UserDetailEntity() {
+    public UserDetailsEntity() {
     }
 
-    public UserDetailEntity(UserDetails details) {
+    public UserDetailsEntity(UserDetails details) {
         this.id = details.getId();
         this.username = details.getUsername();
         this.userType = details.getUserType();
     }
 
-    public void copy(UserDetailEntity that) {
+    public void copy(UserDetailsEntity that) {
         this.id = that.id;
         this.email = that.email;
         this.realName = that.realName;

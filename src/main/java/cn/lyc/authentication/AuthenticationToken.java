@@ -3,9 +3,9 @@ package cn.lyc.authentication;
 
 public class AuthenticationToken {
 
-    String token;
-    String url;
-    Authentication authentication;
+    final String token;
+    final String url;
+    final Authentication authentication;
 
     public AuthenticationToken(String token, String url, Authentication authentication) {
         this.token = token;

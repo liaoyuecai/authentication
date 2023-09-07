@@ -2,7 +2,7 @@ package cn.lyc.authentication;
 
 
 public interface AuthenticationCacheService {
-    UserDetailEntity getUserDetails(String key);
+    UserDetails getUserDetails(String key);
 
     void setUserDetails(String key, UserDetails details, long second);
 

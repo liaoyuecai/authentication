@@ -15,6 +15,9 @@ public interface UserDetails {
         return false;
     }
 
+    default void setRoot(boolean root) {
+    }
+
 
     String getUsername();
 

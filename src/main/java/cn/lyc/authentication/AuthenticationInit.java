@@ -2,8 +2,10 @@ package cn.lyc.authentication;
 
 
 import cn.lyc.authentication.AuthenticationConfiguration.AuthenticationProperties;
+import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -12,10 +14,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Role;
 import org.springframework.util.StringUtils;
 
-import javax.crypto.KeyGenerator;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.Base64;
+import java.util.Random;
 
 public class AuthenticationInit {
     final Log log = LogFactory.getLog(AuthenticationConfiguration.class);
@@ -30,15 +31,24 @@ public class AuthenticationInit {
             AuthenticationProcessor processor = new AuthenticationProcessor();
             try {
                 processor.cacheService(context.getBean(AuthenticationCacheService.class));
-            } catch (BeanCreationException be) {
+            } catch (BeansException be) {
                 if (!StringUtils.hasText(AuthenticationProperties.secretKey)) {
-                    KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-                    keyGen.init(256, new SecureRandom());
-                    AuthenticationProperties.secretKey = Base64.getEncoder().encodeToString(
-                            keyGen.generateKey().getEncoded());
+                    StringBuilder str = new StringBuilder();
+                    Random random = new Random();
+                    while (str.length() < 64) {
+                        int nextInt = random.nextInt(36);
+                        if (nextInt < 10) {
+                            str.append(nextInt);
+                        } else {
+                            str.append((nextInt - 10) + 'a');
+                        }
+                    }
+                    processor.initJwtService(new SecretKeySpec(str.toString().getBytes(), SignatureAlgorithm.HS256.getJcaName()));
                     log.warn("jwt secretKey not set, the random secretKey will be used");
+                } else {
+                    processor.initJwtService(new SecretKeySpec(AuthenticationProperties.secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName()));
                 }
-                processor.initJwtService();
+
             }
             return processor;
         }

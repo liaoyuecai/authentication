@@ -3,6 +3,7 @@ package cn.lyc.authentication;
 import cn.lyc.authentication.AuthenticationConfiguration.AuthenticationProperties;
 import io.jsonwebtoken.*;
 
+import javax.crypto.SecretKey;
 import java.util.*;
 
 public class JwtService {
@@ -11,6 +12,11 @@ public class JwtService {
     private final static String USERNAME_KEY = "username";
     private final static String ROLES_KEY = "roles";
     private final static String URLS_KEY = "urls";
+    final SecretKey secretKey;
+
+    public JwtService(SecretKey secretKey) {
+        this.secretKey = secretKey;
+    }
 
     /**
      * jwt说明
@@ -36,7 +42,7 @@ public class JwtService {
                 .setId(UUID.randomUUID().toString())
                 .setIssuedAt(new Date(time))
                 .compressWith(CompressionCodecs.GZIP)
-                .signWith(SignatureAlgorithm.HS512, AuthenticationProperties.secretKey)
+                .signWith(SignatureAlgorithm.HS512, secretKey)
                 .setExpiration(new Date(time + AuthenticationProperties.timeout * 1000));
         if (issuer != null) builder.setIssuer(issuer);
         if (subject != null) builder.setSubject(subject);
@@ -51,10 +57,10 @@ public class JwtService {
 
     public UserDetails parserToken(String token) {
         Claims claims = Jwts.parser()
-                .setSigningKey(AuthenticationProperties.secretKey)
+                .setSigningKey(secretKey)
                 .parseClaimsJws(token)
                 .getBody();
-        UserDetailEntity entity = new UserDetailEntity();
+        UserDetailsEntity entity = new UserDetailsEntity();
         entity.setUsername(claims.get(USERNAME_KEY, String.class));
         entity.setRealName(claims.get(REAL_NAME_KEY, String.class));
         entity.setRoles(claims.get(ROLES_KEY, Collection.class));
