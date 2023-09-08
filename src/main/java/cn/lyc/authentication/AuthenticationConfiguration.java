@@ -9,8 +9,6 @@ import org.springframework.context.annotation.Role;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
-import javax.crypto.SecretKey;
-
 @Configuration(proxyBeanMethods = false)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class AuthenticationConfiguration implements ImportBeanDefinitionRegistrar {
@@ -31,7 +29,14 @@ public class AuthenticationConfiguration implements ImportBeanDefinitionRegistra
         AuthenticationProperties.secretKey = (String) annoAttrs.get("secretKey");
         AuthenticationProperties.timeout = (int) annoAttrs.get("timeout");
         AuthenticationProperties.authLevel = (AuthLevel) annoAttrs.get("authLevel");
-        registry.registerBeanDefinition("authenticationInit", new RootBeanDefinition(AuthenticationInit.class));
+
+        registry.registerBeanDefinition("httpAuthenticationAdvisor",
+                new RootBeanDefinition(HttpAuthenticationAdvisor.class));
+        if ((boolean) annoAttrs.get("autoProcessor"))
+            registry.registerBeanDefinition("authenticationProcessor", new RootBeanDefinition(AuthenticationProcessor.class));
+        if ((boolean) annoAttrs.get("autoController"))
+            registry.registerBeanDefinition("authenticationController", new RootBeanDefinition(AuthenticationController.class));
+
     }
 
 

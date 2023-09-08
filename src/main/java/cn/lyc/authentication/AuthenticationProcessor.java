@@ -3,71 +3,60 @@ package cn.lyc.authentication;
 
 import cn.lyc.authentication.AuthenticationConfiguration.AuthenticationProperties;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
 
-import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 public class AuthenticationProcessor {
     public enum UrlType {
         login, logout, register, noAuth, auth
     }
 
-    @Autowired
-    private ApplicationContext context;
+    final Log log = LogFactory.getLog(AuthenticationProcessor.class);
+
+
+    private final UserDetailService userService;
+
+    public AuthenticationProcessor(
+            @Autowired UserDetailService userService) {
+
+        this.userService = userService;
+        if (!StringUtils.hasText(AuthenticationProperties.secretKey)) {
+            StringBuilder str = new StringBuilder();
+            Random random = new Random();
+            while (str.length() < 64) {
+                int nextInt = random.nextInt(36);
+                if (nextInt < 10) {
+                    str.append(nextInt);
+                } else {
+                    str.append((nextInt - 10) + 'a');
+                }
+            }
+            this.jwtService = new JwtService(new SecretKeySpec(str.toString().getBytes(), SignatureAlgorithm.HS256.getJcaName()));
+            log.warn("jwt secretKey not set, the random secretKey will be used");
+        } else {
+            this.jwtService = new JwtService(new SecretKeySpec(AuthenticationProperties.secretKey.getBytes(), SignatureAlgorithm.HS256.getJcaName()));
+        }
+    }
 
     private JwtService jwtService;
 
-    public AuthenticationProcessor initJwtService(SecretKey secretKey) {
-        jwtService = new JwtService(secretKey);
-        return this;
-    }
-
-    private Map<String, UserDetails> userDetailsMap = new ConcurrentHashMap<>();
-
-    private AuthenticationCacheService cacheService;
-
-    public AuthenticationProcessor cacheService(AuthenticationCacheService cacheService) {
-        this.cacheService = cacheService;
-        return this;
-    }
 
     public AuthenticationProcessor addUser(String username, String password) {
-        userDetailsMap.put(username, new UserDetails() {
-            @Override
-            public String getUsername() {
-                return username;
-            }
-
-            @Override
-            public String getPassword() {
-                return password;
-            }
-
-        });
+        if (userService instanceof UserDetailServiceImpl)
+            ((UserDetailServiceImpl) userService).addUser(username, password, 0);
         return this;
     }
 
     public AuthenticationProcessor addUser(String username, String password, Integer userType) {
-        userDetailsMap.put(username, new UserDetails() {
-            @Override
-            public String getUsername() {
-                return username;
-            }
-
-            @Override
-            public String getPassword() {
-                return password;
-            }
-
-            @Override
-            public int getUserType() {
-                return userType;
-            }
-        });
+        if (userService instanceof UserDetailServiceImpl)
+            ((UserDetailServiceImpl) userService).addUser(username, password, userType);
         return this;
     }
 
@@ -79,50 +68,39 @@ public class AuthenticationProcessor {
 
     public Object login(UserDetails userDetails) {
         if (userDetails.isNotNull()) {
-            UserDetails user = checkUserDetails(userDetails);
-            if (user != null) {
+            UserDetails user = userService.findUserDetails(userDetails);
+            if (user != null && user.equals(userDetails)) {
+                user.setRoles(userService.getRoles(user));
+                user.setPermissionUrls(userService.getPermissionUrls(user));
                 String token = buildToken(user);
-                if (cacheService != null)
-                    cacheService.setUserDetails(token, user, AuthenticationProperties.timeout);
-                LoginResponse re = new LoginResponse(token);
-                return re;
+                return new LoginResponse(token);
             }
         }
         throw new LoginException();
     }
 
+
     private UserDetails checkUserDetails(UserDetails userDetails) {
-        try {
-            UserDetailService userService = context.getBean(UserDetailService.class);
-            return userService.findUserDetails(userDetails);
-        } catch (Exception e) {
-            UserDetails user = userDetailsMap.get(userDetails.getUsername());
-            if (user != null && user.equals(userDetails)) {
-                return new UserDetailsEntity(user);
-            }
-            return null;
-        }
+        return userService.findUserDetails(userDetails);
     }
 
     protected String buildToken(UserDetails user) {
-        if (cacheService != null) return UUID.randomUUID().toString();
         return jwtService.createToken(user);
     }
 
-    public boolean register(UserDetails user) {
+    boolean register(UserDetails user) {
         return true;
     }
 
-    public Object logout(String token) {
-        if (token != null && cacheService != null) return cacheService.removeUserDetails(token);
+    protected Object logout(String token) {
         return null;
     }
 
     public UserDetails auth(AuthenticationToken token) {
-        if (StringUtils.hasText(token.getToken())) {
+        if (StringUtils.hasText(token.token())) {
             UserDetails details;
             try {
-                details = getUserDetails(token.getToken());
+                details = getUserDetails(token.token());
             } catch (JwtException e) {
                 details = null;
             }
@@ -134,16 +112,16 @@ public class AuthenticationProcessor {
                 } else {
                     details.setRoot(false);
                 }
-                if (token.getAuthentication() != null && !token.getAuthentication().isRouteAuth())
+                if (token.authentication() != null && !token.authentication().isRouteAuth())
                     return details;
                 boolean flag = switch (AuthenticationProperties.authLevel) {
                     case none -> true;
                     case role ->
-                            token.getAuthentication() != null && authRole(details.getRoles(), Arrays.asList(token.getAuthentication().roles()));
-                    case url -> authUrl(details.getPermissionUrls(), token.getUrl());
-                    case roleAndUrl -> token.getAuthentication() != null &&
-                            authRole(details.getRoles(), Arrays.asList(token.getAuthentication().roles()))
-                            && authUrl(details.getPermissionUrls(), token.getUrl());
+                            token.authentication() != null && authRole(details.getRoles(), Arrays.asList(token.authentication().roles()));
+                    case url -> authUrl(details.getPermissionUrls(), token.url());
+                    case roleAndUrl -> token.authentication() != null &&
+                            authRole(details.getRoles(), Arrays.asList(token.authentication().roles()))
+                            && authUrl(details.getPermissionUrls(), token.url());
                 };
                 if (flag) {
                     return details;
@@ -252,8 +230,7 @@ public class AuthenticationProcessor {
      * @return
      */
     protected UserDetails getUserDetails(String token) {
-        if (cacheService == null) return jwtService.parserToken(token);
-        return cacheService.getUserDetails(token);
+        return jwtService.parserToken(token);
     }
 
 

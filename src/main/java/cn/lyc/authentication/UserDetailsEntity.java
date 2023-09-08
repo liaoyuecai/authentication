@@ -10,6 +10,7 @@ public class UserDetailsEntity implements UserDetails {
     private String username;
     private String email;
     private String phone;
+    private String password;
     private int userType;
     private Collection<String> roles;
     private Collection<String> permissionUrls;
@@ -21,6 +22,7 @@ public class UserDetailsEntity implements UserDetails {
         this.id = details.getId();
         this.username = details.getUsername();
         this.userType = details.getUserType();
+        this.password = details.getPassword();
     }
 
     public void copy(UserDetailsEntity that) {
@@ -32,6 +34,7 @@ public class UserDetailsEntity implements UserDetails {
         this.roles = that.roles;
         this.permissionUrls = that.permissionUrls;
         this.root = that.root;
+        this.password = that.password;
         this.userType = that.userType;
     }
 
@@ -46,6 +49,10 @@ public class UserDetailsEntity implements UserDetails {
 
     public void setRoot(boolean root) {
         this.root = root;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     @Override
@@ -64,7 +71,7 @@ public class UserDetailsEntity implements UserDetails {
 
     @Override
     public String getPassword() {
-        return null;
+        return password;
     }
 
     public void setUsername(String username) {

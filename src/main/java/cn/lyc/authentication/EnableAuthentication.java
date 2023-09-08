@@ -25,4 +25,8 @@ public @interface EnableAuthentication {
     AuthLevel authLevel() default AuthLevel.role;
 
     int timeout() default 300;
+
+    boolean autoController() default true;
+
+    boolean autoProcessor() default true;
 }

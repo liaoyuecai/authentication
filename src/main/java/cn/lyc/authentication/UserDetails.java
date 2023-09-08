@@ -27,6 +27,14 @@ public interface UserDetails {
         return 0;
     }
 
+    default void setRoles(Collection<String> roles) {
+
+    }
+
+    default void setPermissionUrls(Collection<String> permissionUrls) {
+
+    }
+
     default Collection<String> getRoles() {
         return null;
     }

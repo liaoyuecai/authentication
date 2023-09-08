@@ -14,13 +14,13 @@ public class AuthenticationController {
     @PostMapping("login")
     @ResponseBody
     public Object login(@RequestBody LoginRequest request) {
-        return new LoginResponse("");
+        return new Object();
     }
 
     @PostMapping("logout")
     @ResponseBody
     public Object logout() {
-        return new LogoutResponse(true);
+        return new Object();
     }
 
 }
