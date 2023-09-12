@@ -39,6 +39,11 @@ public class UserDetailsEntity implements UserDetails {
     }
 
     @Override
+    public boolean isRoot() {
+        return root;
+    }
+
+    @Override
     public int getId() {
         return id;
     }

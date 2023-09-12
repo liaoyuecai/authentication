@@ -12,6 +12,7 @@ public class JwtService {
     private final static String USERNAME_KEY = "username";
     private final static String ROLES_KEY = "roles";
     private final static String URLS_KEY = "urls";
+    private final static String URLS_ID = "id";
     final SecretKey secretKey;
 
     public JwtService(SecretKey secretKey) {
@@ -48,6 +49,7 @@ public class JwtService {
         if (subject != null) builder.setSubject(subject);
         Map<String, Object> claimMaps = new HashMap<>();
         claimMaps.put(REAL_NAME_KEY, details.getRealName());
+        claimMaps.put(URLS_ID, details.getId());
         claimMaps.put(USERNAME_KEY, details.getUsername());
         claimMaps.put(USERNAME_TYPE_KEY, details.getUserType());
         if (details.getRoles() != null) claimMaps.put(ROLES_KEY, details.getRoles());
@@ -61,6 +63,7 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody();
         UserDetailsEntity entity = new UserDetailsEntity();
+        entity.setId(claims.get(URLS_ID, Integer.class));
         entity.setUsername(claims.get(USERNAME_KEY, String.class));
         entity.setRealName(claims.get(REAL_NAME_KEY, String.class));
         entity.setRoles(claims.get(ROLES_KEY, Collection.class));

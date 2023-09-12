@@ -9,6 +9,10 @@ import org.springframework.context.annotation.Role;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 @Configuration(proxyBeanMethods = false)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class AuthenticationConfiguration implements ImportBeanDefinitionRegistrar {
@@ -29,7 +33,15 @@ public class AuthenticationConfiguration implements ImportBeanDefinitionRegistra
         AuthenticationProperties.secretKey = (String) annoAttrs.get("secretKey");
         AuthenticationProperties.timeout = (int) annoAttrs.get("timeout");
         AuthenticationProperties.authLevel = (AuthLevel) annoAttrs.get("authLevel");
-
+        String[] authorizeUrlPrefix = (String[]) annoAttrs.get("authorizeUrlPrefix");
+        if (authorizeUrlPrefix.length > 0)
+            AuthenticationProperties.authorizeUrlPrefix.addAll(Arrays.stream(authorizeUrlPrefix).toList());
+        String[] authorizeUrlHalf = (String[]) annoAttrs.get("authorizeUrlHalf");
+        if (authorizeUrlPrefix.length > 0)
+            AuthenticationProperties.authorizeUrlHalf.addAll(Arrays.stream(authorizeUrlHalf).toList());
+        String[] authorizeUrlAll = (String[]) annoAttrs.get("authorizeUrlAll");
+        if (authorizeUrlPrefix.length > 0)
+            AuthenticationProperties.authorizeUrlAll.addAll(Arrays.stream(authorizeUrlAll).toList());
         registry.registerBeanDefinition("httpAuthenticationAdvisor",
                 new RootBeanDefinition(HttpAuthenticationAdvisor.class));
         if ((boolean) annoAttrs.get("autoProcessor"))
@@ -41,13 +53,16 @@ public class AuthenticationConfiguration implements ImportBeanDefinitionRegistra
 
 
     public static class AuthenticationProperties {
-        public static String rootAccount;
-        public static String loginUrl;
-        public static String logoutUrl;
-        public static String registerUrl;
-        public static String secretKey;
-        public static int timeout;
-        public static AuthLevel authLevel;
+        static String rootAccount;
+        static String loginUrl;
+        static String logoutUrl;
+        static String registerUrl;
+        static String secretKey;
+        static int timeout;
+        static AuthLevel authLevel;
+        static final Set<String> authorizeUrlPrefix = new HashSet<>();
+        static final Set<String> authorizeUrlHalf = new HashSet<>();
+        static final Set<String> authorizeUrlAll = new HashSet<>();
     }
 
 }

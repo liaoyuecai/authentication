@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
 import javax.crypto.spec.SecretKeySpec;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Random;
 
 
 public class AuthenticationProcessor {
@@ -59,11 +61,6 @@ public class AuthenticationProcessor {
             ((UserDetailServiceImpl) userService).addUser(username, password, userType);
         return this;
     }
-
-
-    private final Set<String> authorizeUrlPrefix = new HashSet<>();
-    private final Set<String> authorizeUrlHalf = new HashSet<>();
-    private final Set<String> authorizeUrlAll = new HashSet<>();
 
 
     public Object login(UserDetails userDetails) {
@@ -172,11 +169,11 @@ public class AuthenticationProcessor {
      */
     public AuthenticationProcessor addAuthorizeUrl(String url) {
         if (url.equals("/**")) {
-            authorizeUrlPrefix.add(url.replace("/**", ""));
+            AuthenticationProperties.authorizeUrlPrefix.add(url.replace("/**", ""));
         } else if (url.equals("/*")) {
-            authorizeUrlHalf.add(url.replace("/*", ""));
+            AuthenticationProperties.authorizeUrlHalf.add(url.replace("/*", ""));
         } else {
-            authorizeUrlAll.add(url);
+            AuthenticationProperties.authorizeUrlAll.add(url);
         }
         return this;
     }
@@ -189,9 +186,9 @@ public class AuthenticationProcessor {
         } else if (AuthenticationProperties.registerUrl != null && AuthenticationProperties.registerUrl.equals(url)) {
             return UrlType.register;
         } else if (checkUrl(url)) {
-            return UrlType.noAuth;
-        } else {
             return UrlType.auth;
+        } else {
+            return UrlType.noAuth;
         }
     }
 
@@ -203,23 +200,23 @@ public class AuthenticationProcessor {
      * @return
      */
     boolean checkUrl(String url) {
-        if (authorizeUrlAll.contains(url)) {
-            return true;
+        if (AuthenticationProperties.authorizeUrlAll.contains(url)) {
+            return false;
         }
-        for (String str : authorizeUrlHalf) {
+        for (String str : AuthenticationProperties.authorizeUrlHalf) {
             str = str.replace("*", "");
             url = url.replace(str, "");
             if (!url.contains("/")) {
-                return true;
+                return false;
             }
         }
-        for (String str : authorizeUrlPrefix) {
+        for (String str : AuthenticationProperties.authorizeUrlPrefix) {
             str = str.replace("**", "");
             if (url.contains(str)) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
 

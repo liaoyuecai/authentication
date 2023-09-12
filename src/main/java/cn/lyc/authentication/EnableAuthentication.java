@@ -29,4 +29,10 @@ public @interface EnableAuthentication {
     boolean autoController() default true;
 
     boolean autoProcessor() default true;
+
+    String[] authorizeUrlPrefix() default {};
+
+    String[] authorizeUrlHalf() default {};
+
+    String[] authorizeUrlAll() default {};
 }
